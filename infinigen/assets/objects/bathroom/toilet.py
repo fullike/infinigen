@@ -21,7 +21,7 @@ from infinigen.assets.utils.decorate import (
     write_co,
 )
 from infinigen.assets.utils.draw import align_bezier
-from infinigen.assets.utils.object import join_objects, new_bbox, new_cube, new_cylinder
+from infinigen.assets.utils.object import join_objects, new_empty, new_bbox, new_cube, new_cylinder
 from infinigen.core.placement.factory import AssetFactory
 from infinigen.core.util import blender as butil
 from infinigen.core.util.blender import deep_clone_obj
@@ -92,13 +92,29 @@ class ToiletFactory(AssetFactory):
                 * (self.seat_size + self.size + self.thickness + self.thickness),
             ),
         )
+    def render(self, filepath, objs=[]):
+        for obj in bpy.data.objects:
+            print(obj.name)
+            obj.hide_render = not obj in objs if len(objs) > 0 else False
+        # 设置渲染引擎为 Cycles 或 Eevee
+        bpy.context.scene.render.engine = 'CYCLES'  # 或者 'BLENDER_EEVEE'
 
+        # 启用线框渲染
+        bpy.context.scene.render.use_freestyle = True  # 启用 Freestyle 线框
+        bpy.context.scene.render.line_thickness = 1.0  # 设置线框厚度        
+        # 设置渲染参数
+        bpy.context.scene.render.image_settings.file_format = 'PNG'  # 设置输出格式为PNG
+        bpy.context.scene.render.filepath = filepath  # 设置输出路径
+        # 渲染场景
+        bpy.ops.render.render(write_still=True)  # 渲染并保存图像
     def create_asset(self, **params) -> bpy.types.Object:
         upper = self.build_curve()
+    #    self.render("step_1.png", [upper])
         lower = deep_clone_obj(upper)
         lower.scale = [self.tube_scale] * 3
         lower.location = 0, self.tube_scale * self.mid_offset / 2, -self.depth
         butil.apply_transform(lower, True)
+    #    self.render("step_2.png", [lower])
         bottom = deep_clone_obj(upper)
         bottom.scale = [self.stand_scale] * 3
         bottom.location = (
@@ -107,12 +123,17 @@ class ToiletFactory(AssetFactory):
             -self.height,
         )
         butil.apply_transform(bottom, True)
-
+    #    self.render("step_3.png", [bottom])
         obj = self.make_tube(lower, upper)
+    #    self.render("step_4.png", [obj])
         seat, cover = self.make_seat(obj)
+    #    self.render("step_5.png", [seat, cover])
         stand = self.make_stand(obj, bottom)
+    #    self.render("step_6.png", [stand])
         back = self.make_back(obj)
+    #    self.render("step_7.png", [back])
         tank = self.make_tank()
+    #    self.render("step_8.png", [tank])
         butil.modify_mesh(obj, "BEVEL", segments=2)
         match self.hardware_type:
             case "button":
@@ -120,9 +141,23 @@ class ToiletFactory(AssetFactory):
             case _:
                 hardware = self.add_handle()
         write_attribute(hardware, 1, "hardware", "FACE")
-        obj = join_objects([obj, seat, cover, stand, back, tank, hardware])
+        # self.render("step_0.png", [obj])
+        # self.render("step_1.png", [seat])
+        # self.render("step_2.png", [cover])
+        # self.render("step_3.png", [stand])
+        # self.render("step_4.png", [back])
+        # self.render("step_5.png", [tank])
+        # self.render("step_6.png", [hardware])
+        obj = join_objects([obj, seat, stand, back, tank, hardware])
+        cover.parent = obj
         obj.rotation_euler[-1] = np.pi / 2
+        joint = new_empty(location=cover.location, rotation=cover.rotation_euler)
+        joint.parent = obj
+        joint["obj1"] = obj
+        joint["obj2"] = cover
+        joint["limit"] = 90.0
         butil.apply_transform(obj)
+        self.render("step_7.png")
         return obj
 
     def build_curve(self):
