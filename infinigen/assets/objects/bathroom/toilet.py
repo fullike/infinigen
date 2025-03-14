@@ -109,12 +109,10 @@ class ToiletFactory(AssetFactory):
         bpy.ops.render.render(write_still=True)  # 渲染并保存图像
     def create_asset(self, **params) -> bpy.types.Object:
         upper = self.build_curve()
-    #    self.render("step_1.png", [upper])
         lower = deep_clone_obj(upper)
         lower.scale = [self.tube_scale] * 3
         lower.location = 0, self.tube_scale * self.mid_offset / 2, -self.depth
         butil.apply_transform(lower, True)
-    #    self.render("step_2.png", [lower])
         bottom = deep_clone_obj(upper)
         bottom.scale = [self.stand_scale] * 3
         bottom.location = (
@@ -123,17 +121,11 @@ class ToiletFactory(AssetFactory):
             -self.height,
         )
         butil.apply_transform(bottom, True)
-    #    self.render("step_3.png", [bottom])
         obj = self.make_tube(lower, upper)
-    #    self.render("step_4.png", [obj])
         seat, cover = self.make_seat(obj)
-    #    self.render("step_5.png", [seat, cover])
         stand = self.make_stand(obj, bottom)
-    #    self.render("step_6.png", [stand])
         back = self.make_back(obj)
-    #    self.render("step_7.png", [back])
         tank = self.make_tank()
-    #    self.render("step_8.png", [tank])
         butil.modify_mesh(obj, "BEVEL", segments=2)
         match self.hardware_type:
             case "button":
@@ -157,7 +149,7 @@ class ToiletFactory(AssetFactory):
         joint["obj2"] = cover
         joint["limit"] = 90.0
         butil.apply_transform(obj)
-        self.render("step_7.png")
+        # self.render("step_7.png")
         return obj
 
     def build_curve(self):

@@ -303,6 +303,7 @@ def home_asset_usage():
             {
                 lamp.CeilingLightFactory,
                 lamp.CeilingClassicLampFactory,
+                tables.TableDiningFactory,
                 seating.ChairFactory,
                 seating.BarChairFactory,
                 seating.OfficeChairFactory,
